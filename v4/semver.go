@@ -471,20 +471,29 @@ func (v versionExtension) Compare(o versionExtension) int {
 	// 2. Handle Numeric vs Alphanumeric
 	// Identify segments containing pre-release identifiers (rc, alpha, beta).
 	isPreReleaseLabel := func(s string) bool {
-		sl := strings.ToLower(s)
-		return strings.Contains(sl, "rc") || (strings.Contains(sl, "-") &&
-			(strings.Contains(sl, "alpha") || strings.Contains(sl, "beta")))
+		lowerStr := strings.ToLower(s)
+		if !strings.Contains(lowerStr, "-") {
+			return false
+		}
+		// Only flag as pre-release if it contains these specific markers
+		preReleaseMarkers := []string{"alpha", "beta", "rc", "pre", "dev"}
+		for _, marker := range preReleaseMarkers {
+			if strings.Contains(lowerStr, marker) {
+				return true
+			}
+		}
+		return false
 	}
 
 	if v.IsNum && !o.IsNum {
 		if isPreReleaseLabel(o.VersionStr) {
-			return 1 // Stability Priority: Stable > Pre-release
+			return 1 // Number wins against an RC/Alpha/Beta string
 		}
 		return -1 // Standard SemVer: Number < String
 	}
 	if !v.IsNum && o.IsNum {
 		if isPreReleaseLabel(v.VersionStr) {
-			return -1 // Stability Priority: Pre-release < Stable
+			return -1 // RC/Alpha/Beta string loses against a Number
 		}
 		return 1 // Standard SemVer: String > Number
 	}
@@ -492,20 +501,6 @@ func (v versionExtension) Compare(o versionExtension) int {
 	// 3. Both are Alphanumeric
 	if v.VersionStr == o.VersionStr {
 		return 0
-	}
-
-	// Pre-release marker check for string-vs-string
-	isPre := func(s string) bool {
-		sl := strings.ToLower(s)
-		return strings.Contains(sl, "rc") || strings.Contains(sl, "alpha") || strings.Contains(sl, "beta")
-	}
-
-	preV, preO := isPre(v.VersionStr), isPre(o.VersionStr)
-	if preV != preO {
-		if preV {
-			return -1
-		}
-		return 1
 	}
 
 	// Natural sort fallback for generic segments (e.g. "9-fips" vs "10-fips")

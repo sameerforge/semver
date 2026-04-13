@@ -597,6 +597,18 @@ func TestEdgeCases_NaturalSortAndMetadata(t *testing.T) {
 
 		// 3. Mixed Alphanumeric: abc2 should be less than abc10
 		{"1.0.0+abc2", "1.0.0+abc10", -1, "Natural sort: abc2 should be less than abc10"},
+
+		// 4. Vendir Compatibility (The new case pre < rc)
+		{"0.0.1-pre.1", "0.0.1-rc.0", -1, "Vendir: pre < rc alphabetically"},
+
+		// 5. Standard Pre release numeric ones
+		{"1.0.0-rc.1", "1.0.0-rc.2", -1, "Standard: numeric pre-release"},
+
+		// 6. Stability Check: Ensure alpha/beta without hyphens follow standard rules
+		{"1.0.0-beta", "1.0.0-rc", -1, "Standard: beta < rc alphabetically as segments have no internal hyphens"},
+
+		// 7. Stable release vs higher FIPS release
+		{"1.2.3+abc.9", "1.2.3+abc.10-fips", -1, "Standard: 9 should be less than 10-fips"},
 	}
 
 	for _, tt := range tests {
